@@ -11,11 +11,11 @@ json1 = {
     "tenants": {
         "EOSC": {
             "streaming": {},
-            "ingest_metric": "OK"
+            "ingest_metric": "YES"
         },
         "EOSCCORE": {
             "streaming": {},
-            "ingest_metric": "OK"
+            "ingest_metric": "NO"
         }
     }
 }
@@ -81,3 +81,35 @@ class JsonTests(unittest.TestCase):
             "https://mock.url.com/some/path", timeout=30
         )
         self.assertEqual(context.exception.__str__(), "Bad json")
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse(self, mock_get):
+        mock_get.return_value = MockResponse(data=json1, status_code=200)
+        value = self.json1.parse(key="status")
+        mock_get.assert_called_once_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, "OK")
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nonexisting_key(self, mock_get):
+        mock_get.return_value = MockResponse(data=json1, status_code=200)
+        with self.assertRaises(CriticalException) as context:
+            self.json1.parse(key="nonexisting")
+        mock_get.assert_called_once_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(
+            context.exception.__str__(), "Key 'nonexisting' not found"
+        )
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nested(self, mock_get):
+        mock_get.return_value = MockResponse(data=json1, status_code=200)
+        value1 = self.json1.parse(key="tenants.EOSC.ingest_metric")
+        value2 = self.json1.parse(key="tenants.EOSCCORE.ingest_metric")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value1, "YES")
+        self.assertEqual(value2, "NO")

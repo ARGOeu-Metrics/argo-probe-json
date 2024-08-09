@@ -25,3 +25,22 @@ class Json:
 
     def get(self):
         return self._get()
+
+    def parse(self, key):
+        data = self._get()
+
+        keys = key.split(".")
+
+        try:
+            if len(keys) == 1:
+                return data[key]
+
+            else:
+                value = data[keys[0]]
+                for k in keys[1:]:
+                    value = value[k]
+
+                return value
+
+        except KeyError:
+            raise CriticalException(f"Key '{key}' not found")
