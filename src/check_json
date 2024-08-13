@@ -14,8 +14,8 @@ notes:
   The format for the warning and critical range is as follows:
   10 - raises alert when value is outside of [0, 10] range
   10: - raises alert when value is outside of [10, Inf] range
-  10:20 - raises alert when value is outside of [10, 20] range
-  """ + "examples:\n" \
+  """ + "  10:20 - raises alert when value is outside of [10, 20] range\n\n" \
+      "examples:\n" \
       "  Checking that JSON response is valid\n" \
       "  /usr/libexec/argo/probes/json/check_json -u https://test.argo.eu/ " \
       "-t 30\n\n" \
