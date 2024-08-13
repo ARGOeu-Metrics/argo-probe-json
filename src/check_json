@@ -1,0 +1,141 @@
+#!/usr/bin/python3
+import argparse
+import sys
+import textwrap
+
+from argo_probe_json.analysis import check_equality, get_range, value_in_range
+from argo_probe_json.exceptions import CriticalException, JsonException, \
+    WarningException
+from argo_probe_json.json import Json
+from argo_probe_json.status import Status
+
+NOTE = """
+notes:
+  The format for the warning and critical range is as follows:
+  10 - raises alert when value is outside of [0, 10] range
+  10: - raises alert when value is outside of [10, Inf] range
+  """ + "  10:20 - raises alert when value is outside of [10, 20] range\n\n" \
+      "examples:\n" \
+      "  Checking that JSON response is valid\n" \
+      "  /usr/libexec/argo/probes/json/check_json -u https://test.argo.eu/ " \
+      "-t 30\n\n" \
+      "  Checking that JSON contains a key 'test' with a value 'test_value'\n" \
+      "  /usr/libexec/argo/probes/json/check_json -u https://test.argo.eu/ " \
+      "-t 30 -k test -v test_value\n\n" \
+      "  Checking that JSON contains a key 'test' and testing if it fits in" \
+      " given warning and critical range\n" \
+      "  /usr/libexec/argo/probes/json/check_json -u https://test.argo.eu/ " \
+      "-t 30 -k 30 -w 3:5 -c 0:2"
+
+USAGE = """
+  Probe that checks JSON response given the URL
+  -u URL -t TIMEOUT [-k KEY] [[-v TARGET_VALUE] | [-w WARNING] [-c CRITICAL]] 
+  [-h]
+"""
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        add_help=False,
+        usage=USAGE,
+        formatter_class=argparse.RawTextHelpFormatter,
+        epilog=textwrap.dedent(NOTE)
+    )
+    required = parser.add_argument_group("required arguments")
+    optional = parser.add_argument_group("optional arguments")
+
+    required.add_argument(
+        "-u", "--url", dest="url", type=str, required=True,
+        help="the URL we wish to check"
+    )
+    required.add_argument(
+        "-t", "--timeout", dest="timeout", type=float, required=True,
+        default=30, help="seconds before the request times out (default: 30)"
+    )
+    optional.add_argument(
+        "-k", "--key", dest="key", type=str,
+        help="the key in JSON for which we wish to check value; use dots to "
+             "access a nested key"
+    )
+    optional.add_argument(
+        "-v", "--target-value", dest="target_value",
+        help="the target value to which the value of the key must be equal"
+    )
+    optional.add_argument(
+        "-w", "--warning", dest="warning", type=str,
+        help="warning range in format <floor>:<ceil>; if the inspected value "
+             "is in the given range, the probe will return WARNING status"
+    )
+    optional.add_argument(
+        "-c", "--critical", dest="critical", type=str,
+        help="critical range in format <floor>:<ceil>; if the inspected value "
+             "is in the given range, the probe will return CRITICAL status"
+    )
+    optional.add_argument(
+        "-h", "--help", action="help", default=argparse.SUPPRESS,
+        help="Show this help message and exit"
+    )
+
+    args = parser.parse_args()
+
+    status = Status()
+    json = Json(url=args.url, timeout=args.timeout)
+
+    if args.target_value and (args.warning or args.critical):
+        parser.error(
+            "You cannot use '--target-value' with the ranges"
+        )
+        sys.exit(2)
+
+    try:
+        if args.key:
+            value = json.parse(key=args.key)
+
+            if args.target_value:
+                if check_equality(value=value, target=args.target_value):
+                    status.ok(msg=f"{args.key} value is {args.target_value}")
+
+                else:
+                    status.critical(
+                        msg=f"{args.key} value is not {args.target_value}"
+                    )
+
+            elif args.warning or args.critical:
+                status.ok("JSON response OK")
+                if args.warning:
+                    warning = get_range(args.warning)
+                    if value_in_range(value=value, range_tuple=warning):
+                        status.warning(
+                            msg=f"Value {value} in range "
+                                f"{warning[0]}:{warning[1]}"
+                        )
+
+                if args.critical:
+                    critical = get_range(args.critical)
+                    if value_in_range(value=value, range_tuple=critical):
+                        status.critical(
+                            msg=f"Value {value} in range "
+                                f"{critical[0]}:{critical[1]}"
+                        )
+
+            else:
+                status.ok(f"Key {args.key} present in JSON response")
+
+        else:
+            status.ok("JSON response OK")
+
+    except CriticalException as e:
+        status.critical(msg=str(e))
+
+    except WarningException as e:
+        status.warning(str(e))
+
+    except JsonException as e:
+        status.unknown(msg=str(e))
+
+    print(status.get_msg())
+    sys.exit(status.get_code())
+
+
+if __name__ == "__main__":
+    main()
