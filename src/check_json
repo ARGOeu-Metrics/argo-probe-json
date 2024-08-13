@@ -64,12 +64,12 @@ def main():
     optional.add_argument(
         "-w", "--warning", dest="warning", type=str,
         help="warning range in format <floor>:<ceil>; if the inspected value "
-             "is not in the given range, the probe will return WARNING status"
+             "is in the given range, the probe will return WARNING status"
     )
     optional.add_argument(
         "-c", "--critical", dest="critical", type=str,
         help="critical range in format <floor>:<ceil>; if the inspected value "
-             "is not in the given range, the probe will return CRITICAL status"
+             "is in the given range, the probe will return CRITICAL status"
     )
     optional.add_argument(
         "-h", "--help", action="help", default=argparse.SUPPRESS,
