@@ -101,6 +101,7 @@ def main():
                     )
 
             elif args.warning or args.critical:
+                status.ok("JSON response OK")
                 if args.warning:
                     warning = get_range(args.warning)
                     if value_in_range(value=value, range_tuple=warning):
