@@ -120,6 +120,9 @@ def main():
             else:
                 status.ok(f"Key {args.key} present in JSON response")
 
+        else:
+            status.ok("JSON response OK")
+
     except CriticalException as e:
         status.critical(msg=str(e))
 
