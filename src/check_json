@@ -29,7 +29,8 @@ notes:
 
 USAGE = """
   Probe that checks JSON response given the URL
-  -u URL -t TIMEOUT [-k KEY] [[-v TARGET_VALUE] | [-w WARNING] [-c CRITICAL]] 
+  -u URL -t TIMEOUT [-k KEY] [[[-v TARGET_VALUE] | [--is-true] | [--is-false]] 
+  | [-w WARNING] [-c CRITICAL]] 
   [-h]
 """
 
