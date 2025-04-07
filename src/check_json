@@ -43,6 +43,7 @@ def main():
     )
     required = parser.add_argument_group("required arguments")
     optional = parser.add_argument_group("optional arguments")
+    values = optional.add_mutually_exclusive_group()
 
     required.add_argument(
         "-u", "--url", dest="url", type=str, required=True,
@@ -57,9 +58,17 @@ def main():
         help="the key in JSON for which we wish to check value; use dots to "
              "access a nested key"
     )
-    optional.add_argument(
+    values.add_argument(
         "-v", "--target-value", dest="target_value",
         help="the target value to which the value of the key must be equal"
+    )
+    values.add_argument(
+        "--is-true", dest="is_true", action="store_true",
+        help="check if key value is True"
+    )
+    values.add_argument(
+        "--is-false", dest="is_false", action="store_true",
+        help="check if key value is False"
     )
     optional.add_argument(
         "-w", "--warning", dest="warning", type=str,
@@ -81,11 +90,13 @@ def main():
     status = Status()
     json = Json(url=args.url, timeout=args.timeout)
 
-    if args.target_value and (args.warning or args.critical):
+    if (args.target_value or args.is_true or args.is_false) and (
+            args.warning or args.critical
+    ):
         parser.error(
-            "You cannot use '--target-value' with the ranges"
+            "You cannot use single value comparison and the ranges at the same "
+            "time"
         )
-        sys.exit(2)
 
     try:
         if args.key:
@@ -99,6 +110,20 @@ def main():
                     status.critical(
                         msg=f"{args.key} value is not {args.target_value}"
                     )
+
+            elif args.is_true:
+                if value is True:
+                    status.ok(f"Value {args.key} is True")
+
+                else:
+                    status.critical(f"Value {args.key} is not True")
+
+            elif args.is_false:
+                if value is False:
+                    status.ok(f"Value {args.key} is False")
+
+                else:
+                    status.critical(f"Value {args.key} is not False")
 
             elif args.warning or args.critical:
                 status.ok("JSON response OK")
