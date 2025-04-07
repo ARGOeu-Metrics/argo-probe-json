@@ -17,6 +17,8 @@ In case the probe uses only mandatory arguments, it will simply check that the r
 
 * `-k`, `--key` which is the key in JSON for which we wish to inspect the value;
 * `-v`, `--target-value`  which is the target value to which the value of the key must be equal;
+* `--is-true` flag that tells the probe to check if the tested value is boolean `True`;
+* `--is-false` flag that tells the probe to check if the tested value is boolean `False`;
 * `-w`, `--warning` which is the warning range - if the inspected value is in the requested range, the probe will return WARNING status;
 * `-c`, `--critical` which is the critical range - if the inspected value is in the requested range, the probe will return CRITICAL status.
 
@@ -88,7 +90,8 @@ Keep in mind that you cannot use `--target-value` argument with any of the range
 # /usr/libexec/argo/probes/json/check_json -u https://test.example.com/test.json -t 30 -k key1.key3.key4 --target-value value4 -w 30
 usage: 
   Probe that checks JSON response given the URL
-  -u URL -t TIMEOUT [-k KEY] [[-v TARGET_VALUE] | [-w WARNING] [-c CRITICAL]] 
+  -u URL -t TIMEOUT [-k KEY] [[[-v TARGET_VALUE] | [--is-true] | [--is-false]] 
+  | [-w WARNING] [-c CRITICAL]] 
   [-h]
-check_json: error: You cannot use '--target-value' with the ranges
+check_json: error: You cannot use single value comparison and the ranges at the same time
 ```
