@@ -21,7 +21,11 @@ class Json:
             requests.exceptions.TooManyRedirects,
             ValueError
         ) as e:
-            raise CriticalException(str(e))
+            error = str(e)
+            if self.url in error:
+                error = error.replace(self.url, "")
+
+            raise CriticalException(error)
 
     def get(self):
         return self._get()
