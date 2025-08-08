@@ -20,6 +20,48 @@ json1 = {
     }
 }
 
+json2 = [
+    {
+        "status": "OK",
+        "tenants": {
+            "EOSC": {
+                "streaming": {},
+        },
+            "EOSCCORE": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        }
+    },
+    {
+        "status": "CRITICAL",
+        "tenants": {
+            "NI4OS": {
+                "streaming": {},
+            },
+            "EGI": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        }
+    }
+]
+
+json3 = {
+    "status": "OK",
+    "tenants": [
+        {
+            "name": "EOSC",
+            "streaming": {},
+        },
+        {
+            "name": "EOSCCORE",
+            "streaming": {},
+            "ingest_metric": "NO"
+        }
+    ]
+}
+
 
 class MockResponse:
     def __init__(self, data, status_code):
@@ -42,11 +84,11 @@ class MockResponse:
             )
 
     def json(self):
-        if isinstance(self.data, dict):
-            return self.data
+        if self.data is None:
+            raise ValueError("Bad json")
 
         else:
-            raise ValueError("Bad json")
+            return self.data
 
 
 class JsonTests(unittest.TestCase):
@@ -113,3 +155,26 @@ class JsonTests(unittest.TestCase):
         )
         self.assertEqual(value1, "YES")
         self.assertEqual(value2, "NO")
+
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json2, status_code=200)
+        value1 = self.json1.parse(key="0.status")
+        value2 = self.json1.parse(key="1.status")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value1, "OK")
+        self.assertEqual(value2, "CRITICAL")
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nested_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json3, status_code=200)
+        value1 = self.json1.parse(key="tenants.0.name")
+        value2 = self.json1.parse(key="tenants.1.name")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value1, "EOSC")
+        self.assertEqual(value2, "EOSCCORE")

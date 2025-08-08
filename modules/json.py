@@ -37,11 +37,18 @@ class Json:
 
         try:
             if len(keys) == 1:
+                if key.isdigit():
+                    key = int(key)
                 return data[key]
 
             else:
-                value = data[keys[0]]
+                if keys[0].isdigit():
+                    value = data[int(keys[0])]
+                else:
+                    value = data[keys[0]]
                 for k in keys[1:]:
+                    if k.isdigit():
+                        k = int(k)
                     value = value[k]
 
                 return value
