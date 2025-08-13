@@ -7,6 +7,10 @@ def check_equality(value, target):
     return value == target
 
 
+def check_target_in_value(value, target):
+    return target in value
+
+
 def get_range(range_string):
     try:
         if range_string.strip().startswith(":"):
@@ -38,5 +42,5 @@ def value_in_range(value, range_tuple):
     try:
         return floor <= float(value) <= ceil
 
-    except ValueError:
+    except (ValueError, TypeError):
         raise JsonException(f"Value '{value}' is not a number!")

@@ -37,12 +37,39 @@ class Json:
 
         try:
             if len(keys) == 1:
+                if key.isdigit():
+                    key = int(key)
                 return data[key]
 
             else:
-                value = data[keys[0]]
-                for k in keys[1:]:
-                    value = value[k]
+                if keys[0].isdigit():
+                    value = data[int(keys[0])]
+
+                elif keys[0] == "*":
+                    value = data
+
+                else:
+                    value = data[keys[0]]
+
+                for i in range(1, len(keys)):
+                    k = keys[i]
+                    if k.isdigit():
+                        k = int(k)
+
+                    if keys[i] == "*":
+                        pass
+
+                    elif keys[i-1] == "*":
+                        try:
+                            value = [v[k] for v in value]
+
+                        except TypeError:
+                            raise CriticalException(
+                                f"No list under key '{'.'.join(keys[0:i])}'"
+                            )
+
+                    else:
+                        value = value[k]
 
                 return value
 

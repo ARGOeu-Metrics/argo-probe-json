@@ -1,7 +1,9 @@
 import math
 import unittest
 
-from argo_probe_json.analysis import check_equality, get_range, value_in_range
+from argo_probe_json.analysis import (
+    check_equality, get_range, value_in_range, check_target_in_value
+)
 from argo_probe_json.exceptions import JsonException
 
 
@@ -9,6 +11,14 @@ class AnalysisTests(unittest.TestCase):
     def test_equality(self):
         self.assertTrue(check_equality("test", "test"))
         self.assertFalse(check_equality("test", "test2"))
+
+    def test_target_in_value(self):
+        self.assertTrue(
+            check_target_in_value(value=["test1", "test2"], target="test1")
+        )
+        self.assertFalse(
+            check_target_in_value(value=["test1", "test2"], target="test3")
+        )
 
     def test_get_range(self):
         self.assertEqual(get_range("0:200"), (0, 200.))
@@ -59,7 +69,22 @@ class AnalysisTests(unittest.TestCase):
     def test_value_in_range_if_not_number(self):
         with self.assertRaises(JsonException) as context:
             value_in_range(value="meh", range_tuple=(100, 300))
-
         self.assertEqual(
             context.exception.__str__(), "Value 'meh' is not a number!"
+        )
+
+    def test_value_in_range_if_list(self):
+        with self.assertRaises(JsonException) as context:
+            value_in_range(value=["meh", "bla"], range_tuple=(100, 300))
+        self.assertEqual(
+            context.exception.__str__(),
+            "Value '[\'meh\', \'bla\']' is not a number!"
+        )
+
+    def test_value_in_range_if_dict(self):
+        with self.assertRaises(JsonException) as context:
+            value_in_range(value={"meh": "bla"}, range_tuple=(100, 300))
+        self.assertEqual(
+            context.exception.__str__(),
+            "Value '{\'meh\': \'bla\'}' is not a number!"
         )
