@@ -3,7 +3,9 @@ import argparse
 import sys
 import textwrap
 
-from argo_probe_json.analysis import check_equality, get_range, value_in_range
+from argo_probe_json.analysis import (
+    check_equality, get_range, value_in_range, check_target_in_value
+)
 from argo_probe_json.exceptions import CriticalException, JsonException, \
     WarningException
 from argo_probe_json.json import Json
@@ -104,13 +106,31 @@ def main():
             value = json.parse(key=args.key)
 
             if args.target_value:
-                if check_equality(value=value, target=args.target_value):
-                    status.ok(msg=f"{args.key} value is {args.target_value}")
+                if type(value) is list:
+                    if check_target_in_value(
+                            value=value, target=args.target_value
+                    ):
+                        status.ok(
+                            msg=f"Value {args.target_value} is among "
+                                f"{args.key} values"
+                        )
+
+                    else:
+                        status.critical(
+                            msg=f"Value {args.target_value} is not among "
+                                f"{args.key} values"
+                        )
 
                 else:
-                    status.critical(
-                        msg=f"{args.key} value is not {args.target_value}"
-                    )
+                    if check_equality(value=value, target=args.target_value):
+                        status.ok(
+                            msg=f"{args.key} value is {args.target_value}"
+                        )
+
+                    else:
+                        status.critical(
+                            msg=f"{args.key} value is not {args.target_value}"
+                        )
 
             elif args.is_true:
                 if value is True:

@@ -1,7 +1,9 @@
 import math
 import unittest
 
-from argo_probe_json.analysis import check_equality, get_range, value_in_range
+from argo_probe_json.analysis import (
+    check_equality, get_range, value_in_range, check_target_in_value
+)
 from argo_probe_json.exceptions import JsonException
 
 
@@ -9,6 +11,14 @@ class AnalysisTests(unittest.TestCase):
     def test_equality(self):
         self.assertTrue(check_equality("test", "test"))
         self.assertFalse(check_equality("test", "test2"))
+
+    def test_target_in_value(self):
+        self.assertTrue(
+            check_target_in_value(value=["test1", "test2"], target="test1")
+        )
+        self.assertFalse(
+            check_target_in_value(value=["test1", "test2"], target="test3")
+        )
 
     def test_get_range(self):
         self.assertEqual(get_range("0:200"), (0, 200.))
