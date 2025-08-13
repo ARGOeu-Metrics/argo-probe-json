@@ -69,7 +69,22 @@ class AnalysisTests(unittest.TestCase):
     def test_value_in_range_if_not_number(self):
         with self.assertRaises(JsonException) as context:
             value_in_range(value="meh", range_tuple=(100, 300))
-
         self.assertEqual(
             context.exception.__str__(), "Value 'meh' is not a number!"
+        )
+
+    def test_value_in_range_if_list(self):
+        with self.assertRaises(JsonException) as context:
+            value_in_range(value=["meh", "bla"], range_tuple=(100, 300))
+        self.assertEqual(
+            context.exception.__str__(),
+            "Value '[\'meh\', \'bla\']' is not a number!"
+        )
+
+    def test_value_in_range_if_dict(self):
+        with self.assertRaises(JsonException) as context:
+            value_in_range(value={"meh": "bla"}, range_tuple=(100, 300))
+        self.assertEqual(
+            context.exception.__str__(),
+            "Value '{\'meh\': \'bla\'}' is not a number!"
         )

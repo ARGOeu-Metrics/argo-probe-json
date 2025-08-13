@@ -42,5 +42,5 @@ def value_in_range(value, range_tuple):
     try:
         return floor <= float(value) <= ceil
 
-    except ValueError:
+    except (ValueError, TypeError):
         raise JsonException(f"Value '{value}' is not a number!")
