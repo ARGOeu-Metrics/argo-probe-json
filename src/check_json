@@ -121,6 +121,9 @@ def main():
                                 f"{args.key} values"
                         )
 
+                elif type(value) is dict:
+                    status.critical(f"Unable to check equality for dict")
+
                 else:
                     if check_equality(value=value, target=args.target_value):
                         status.ok(
