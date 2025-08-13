@@ -197,3 +197,58 @@ class JsonTests(unittest.TestCase):
             "https://mock.url.com/some/path", timeout=30
         )
         self.assertEqual(value, ["EOSC", "EOSCCORE"])
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list_key_with_wildcard_when_no_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json1, status_code=200)
+        with self.assertRaises(CriticalException) as context:
+            self.json1.parse(key="tenants.*.streaming")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(
+            context.exception.__str__(), "No list under key 'tenants.*'"
+        )
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list_with_wildcard_when_no_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json1, status_code=200)
+        value = self.json1.parse(key="tenants.*")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, {
+            "EOSC": {
+                "streaming": {},
+                "ingest_metric": "YES"
+            },
+            "EOSCCORE": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        })
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nested_with_wildcard_when_no_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json2, status_code=200)
+        value = self.json1.parse(key="*.tenants.*")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, [{
+            "EOSC": {
+                "streaming": {},
+            },
+            "EOSCCORE": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            },
+        }, {
+            "NI4OS": {
+                "streaming": {},
+            },
+            "EGI": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        }])

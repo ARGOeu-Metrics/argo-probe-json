@@ -59,8 +59,14 @@ class Json:
                     if keys[i] == "*":
                         pass
 
-                    elif keys[i - 1] == "*":
-                        value = [v[k] for v in value]
+                    elif keys[i-1] == "*":
+                        try:
+                            value = [v[k] for v in value]
+
+                        except TypeError:
+                            raise CriticalException(
+                                f"No list under key '{'.'.join(keys[0:i])}'"
+                            )
 
                     else:
                         value = value[k]
