@@ -178,3 +178,22 @@ class JsonTests(unittest.TestCase):
         )
         self.assertEqual(value1, "EOSC")
         self.assertEqual(value2, "EOSCCORE")
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list_with_wildcard(self, mock_get):
+        mock_get.return_value = MockResponse(data=json2, status_code=200)
+        value = self.json1.parse(key="*.status")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, ["OK", "CRITICAL"])
+
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nested_list_with_wildcard(self, mock_get):
+        mock_get.return_value = MockResponse(data=json3, status_code=200)
+        value = self.json1.parse(key="tenants.*.name")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, ["EOSC", "EOSCCORE"])

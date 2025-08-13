@@ -44,12 +44,26 @@ class Json:
             else:
                 if keys[0].isdigit():
                     value = data[int(keys[0])]
+
+                elif keys[0] == "*":
+                    value = data
+
                 else:
                     value = data[keys[0]]
-                for k in keys[1:]:
+
+                for i in range(1, len(keys)):
+                    k = keys[i]
                     if k.isdigit():
                         k = int(k)
-                    value = value[k]
+
+                    if keys[i] == "*":
+                        pass
+
+                    elif keys[i - 1] == "*":
+                        value = [v[k] for v in value]
+
+                    else:
+                        value = value[k]
 
                 return value
 
