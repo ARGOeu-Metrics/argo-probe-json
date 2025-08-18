@@ -80,6 +80,18 @@ It is also possible to use wildcard `*` to get `key3` values from all the elemen
 
 In this case, the value would be a list `["value3", "value5"]`. If you want to check if a certain value exists in such a list, you would pass it as the `--target-value` argument. The probe returns OK if the set target value is element of the list. 
 
+If, on the other hand, you have response of the following form:
+
+```json
+[
+  "value1",
+  "value2",
+  "value3"
+]
+```
+
+you can check if a certain value is present in the response, by defining key as `*`.
+
 Keep in mind that, when parsing list of dicts, you cannot use single-value comparisons, like `True/False` checks or the range checks - they are only defined for single values.
 
 #### Ranges definitions
