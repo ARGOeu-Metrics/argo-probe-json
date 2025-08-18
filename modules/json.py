@@ -39,7 +39,13 @@ class Json:
             if len(keys) == 1:
                 if key.isdigit():
                     key = int(key)
-                return data[key]
+                    return data[key]
+
+                elif key == "*":
+                    return data
+
+                else:
+                    return data[key]
 
             else:
                 if keys[0].isdigit():

@@ -62,6 +62,8 @@ json3 = {
     ]
 }
 
+json4 = ["test1", "test2", "test3", "test4"]
+
 
 class MockResponse:
     def __init__(self, data, status_code):
@@ -252,3 +254,16 @@ class JsonTests(unittest.TestCase):
                 "ingest_metric": "NO"
             }
         }])
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_plain_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json4, status_code=200)
+        value = self.json1.parse(key="0")
+        self.assertEqual(value, "test1")
+
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_plain_list_check_if_contains_element(self, mock_get):
+        mock_get.return_value = MockResponse(data=json4, status_code=200)
+        value = self.json1.parse(key="*")
+        self.assertEqual(value, json4)
