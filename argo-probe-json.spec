@@ -2,7 +2,7 @@
 
 Summary:       ARGO probe that checks JSON response given the URL
 Name:          argo-probe-json
-Version:       0.1.1
+Version:       0.1.2
 Release:       1%{?dist}
 Source0:       %{name}-%{version}.tar.gz
 License:       ASL 2.0
