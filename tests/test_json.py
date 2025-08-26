@@ -20,6 +20,50 @@ json1 = {
     }
 }
 
+json2 = [
+    {
+        "status": "OK",
+        "tenants": {
+            "EOSC": {
+                "streaming": {},
+        },
+            "EOSCCORE": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        }
+    },
+    {
+        "status": "CRITICAL",
+        "tenants": {
+            "NI4OS": {
+                "streaming": {},
+            },
+            "EGI": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        }
+    }
+]
+
+json3 = {
+    "status": "OK",
+    "tenants": [
+        {
+            "name": "EOSC",
+            "streaming": {},
+        },
+        {
+            "name": "EOSCCORE",
+            "streaming": {},
+            "ingest_metric": "NO"
+        }
+    ]
+}
+
+json4 = ["test1", "test2", "test3", "test4"]
+
 
 class MockResponse:
     def __init__(self, data, status_code):
@@ -42,11 +86,11 @@ class MockResponse:
             )
 
     def json(self):
-        if isinstance(self.data, dict):
-            return self.data
+        if self.data is None:
+            raise ValueError("Bad json")
 
         else:
-            raise ValueError("Bad json")
+            return self.data
 
 
 class JsonTests(unittest.TestCase):
@@ -113,3 +157,113 @@ class JsonTests(unittest.TestCase):
         )
         self.assertEqual(value1, "YES")
         self.assertEqual(value2, "NO")
+
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json2, status_code=200)
+        value1 = self.json1.parse(key="0.status")
+        value2 = self.json1.parse(key="1.status")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value1, "OK")
+        self.assertEqual(value2, "CRITICAL")
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nested_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json3, status_code=200)
+        value1 = self.json1.parse(key="tenants.0.name")
+        value2 = self.json1.parse(key="tenants.1.name")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value1, "EOSC")
+        self.assertEqual(value2, "EOSCCORE")
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list_with_wildcard(self, mock_get):
+        mock_get.return_value = MockResponse(data=json2, status_code=200)
+        value = self.json1.parse(key="*.status")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, ["OK", "CRITICAL"])
+
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nested_list_with_wildcard(self, mock_get):
+        mock_get.return_value = MockResponse(data=json3, status_code=200)
+        value = self.json1.parse(key="tenants.*.name")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, ["EOSC", "EOSCCORE"])
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list_key_with_wildcard_when_no_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json1, status_code=200)
+        with self.assertRaises(CriticalException) as context:
+            self.json1.parse(key="tenants.*.streaming")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(
+            context.exception.__str__(), "No list under key 'tenants.*'"
+        )
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_list_with_wildcard_when_no_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json1, status_code=200)
+        value = self.json1.parse(key="tenants.*")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, {
+            "EOSC": {
+                "streaming": {},
+                "ingest_metric": "YES"
+            },
+            "EOSCCORE": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        })
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_nested_with_wildcard_when_no_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json2, status_code=200)
+        value = self.json1.parse(key="*.tenants.*")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, [{
+            "EOSC": {
+                "streaming": {},
+            },
+            "EOSCCORE": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            },
+        }, {
+            "NI4OS": {
+                "streaming": {},
+            },
+            "EGI": {
+                "streaming": {},
+                "ingest_metric": "NO"
+            }
+        }])
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_plain_list(self, mock_get):
+        mock_get.return_value = MockResponse(data=json4, status_code=200)
+        value = self.json1.parse(key="0")
+        self.assertEqual(value, "test1")
+
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_plain_list_check_if_contains_element(self, mock_get):
+        mock_get.return_value = MockResponse(data=json4, status_code=200)
+        value = self.json1.parse(key="*")
+        self.assertEqual(value, json4)

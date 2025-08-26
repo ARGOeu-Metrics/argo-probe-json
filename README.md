@@ -16,7 +16,7 @@ The probe has two required arguments:
 In case the probe uses only mandatory arguments, it will simply check that the response is JSON and that the returned status code is OK. There are some optional arguments, however, that cause the probe to do more extensive checks. The arguments are as follows:
 
 * `-k`, `--key` which is the key in JSON for which we wish to inspect the value;
-* `-v`, `--target-value`  which is the target value to which the value of the key must be equal;
+* `-v`, `--target-value`  which is the target value to which the value of the key must be equal, or, if the value is a list, if the target value exists within the list;
 * `--is-true` flag that tells the probe to check if the tested value is boolean `True`;
 * `--is-false` flag that tells the probe to check if the tested value is boolean `False`;
 * `-w`, `--warning` which is the warning range - if the inspected value is in the requested range, the probe will return WARNING status;
@@ -43,6 +43,56 @@ If we would like to inspect the value corresponding to nested key `key4` in the 
 ```
 key1.key3.key4
 ```
+
+#### Lists
+
+The probe can also parse lists in JSON responses. For example, let us assume the following response:
+
+```json
+[
+  {
+    "key1": {
+      "key3": "value3",
+      "key4": "value4"
+    },
+    "key2": "value2"
+  },
+  {
+    "key1": {
+      "key3": "value5"
+    },
+    "key2": "value6"
+  }
+]
+```
+
+To get the value corresponding to `key3` in the first element of list, `--key` argument would be defined as:
+
+```
+0.key1.key3
+```
+
+It is also possible to use wildcard `*` to get `key3` values from all the elements, in which case `--key` argument would be:
+
+```
+*.key1.key3
+```
+
+In this case, the value would be a list `["value3", "value5"]`. If you want to check if a certain value exists in such a list, you would pass it as the `--target-value` argument. The probe returns OK if the set target value is element of the list. 
+
+If, on the other hand, you have response of the following form:
+
+```json
+[
+  "value1",
+  "value2",
+  "value3"
+]
+```
+
+you can check if a certain value is present in the response, by defining key as `*`.
+
+Keep in mind that, when parsing list of dicts, you cannot use single-value comparisons, like `True/False` checks or the range checks - they are only defined for single values.
 
 #### Ranges definitions
 
@@ -95,3 +145,19 @@ usage:
   [-h]
 check_json: error: You cannot use single value comparison and the ranges at the same time
 ```
+
+If you want to use probe to parse JSON response that is a list, you can also do that. You use the number of the element in the list same as the other keys (they are numbered from 0):
+
+```
+# /usr/libexec/argo/probes/json/check_json -u https://test.example.com/test.json -t 30 -k 1.key3.key4 --target-value value4
+OK - 1.key3.key4 value is value4
+```
+
+If you use wildcard, and get a list as a value, you can define a target value to check if it is a member of the list:
+
+```
+# /usr/libexec/argo/probes/json/check_json -u https://test.example.com/test.json -t 30 -k *.key3.key4 --target-value value4
+OK - Value value4 is among *.key3.key4 values
+```
+
+If you wish to check simply that such data exists in the response, you just omit `--target-value` argument.
