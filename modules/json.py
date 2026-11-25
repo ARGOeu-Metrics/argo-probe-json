@@ -36,48 +36,47 @@ class Json:
         keys = key.split(".")
 
         try:
-            if len(keys) == 1:
-                if key.isdigit():
-                    key = int(key)
-                    return data[key]
+            if keys[0] == "*":
+                value = data
+                starred = True
 
-                elif key == "*":
-                    return data
-
-                else:
-                    return data[key]
+            elif keys[0].isdigit():
+                value = data[int(keys[0])]
+                starred = False
 
             else:
-                if keys[0].isdigit():
-                    value = data[int(keys[0])]
+                value = data[keys[0]]
+                starred = False
 
-                elif keys[0] == "*":
-                    value = data
+            for i in range(1, len(keys)):
+                k = keys[i]
+
+                if k == "*":
+                    starred = True
+                    continue
+
+                if k.isdigit():
+                    k = int(k)
+
+                if starred:
+                    try:
+                        value = [v[k] for v in value]
+
+                    except TypeError:
+                        raise CriticalException(
+                            f"No list under key '{'.'.join(keys[0:i])}'"
+                        )
 
                 else:
-                    value = data[keys[0]]
+                    value = value[k]
 
-                for i in range(1, len(keys)):
-                    k = keys[i]
-                    if k.isdigit():
-                        k = int(k)
-
-                    if keys[i] == "*":
-                        pass
-
-                    elif keys[i-1] == "*":
-                        try:
-                            value = [v[k] for v in value]
-
-                        except TypeError:
-                            raise CriticalException(
-                                f"No list under key '{'.'.join(keys[0:i])}'"
-                            )
-
-                    else:
-                        value = value[k]
-
-                return value
+            return value
 
         except KeyError:
+            raise CriticalException(f"Key '{key}' not found")
+
+        except IndexError:
+            raise CriticalException(f"Index '{key}' not found")
+
+        except TypeError:
             raise CriticalException(f"Key '{key}' not found")

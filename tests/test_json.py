@@ -64,6 +64,22 @@ json3 = {
 
 json4 = ["test1", "test2", "test3", "test4"]
 
+json5 = [
+    {
+        "key1": {
+            "key3": "value3",
+            "key4": "value4"
+        },
+        "key2": "value2"
+    },
+    {
+        "key1": {
+            "key3": "value5"
+        },
+        "key2": "value6"
+    }
+]
+
 
 class MockResponse:
     def __init__(self, data, status_code):
@@ -267,3 +283,29 @@ class JsonTests(unittest.TestCase):
         mock_get.return_value = MockResponse(data=json4, status_code=200)
         value = self.json1.parse(key="*")
         self.assertEqual(value, json4)
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_wildcard_with_multiple_nested_keys(self, mock_get):
+        mock_get.return_value = MockResponse(data=json5, status_code=200)
+        value = self.json1.parse(key="*.key1.key3")
+        mock_get.assert_called_with(
+            "https://mock.url.com/some/path", timeout=30
+        )
+        self.assertEqual(value, ["value3", "value5"])
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_indexed_and_wildcard_with_nested_keys(self, mock_get):
+        mock_get.return_value = MockResponse(data=json5, status_code=200)
+        value = self.json1.parse(key="*.key1.key3")
+        self.assertEqual(value, ["value3", "value5"])
+        value = self.json1.parse(key="0.key1.key3")
+        self.assertEqual(value, "value3")
+
+    @patch("argo_probe_json.json.requests.get")
+    def test_parse_wildcard_with_missing_nested_key(self, mock_get):
+        mock_get.return_value = MockResponse(data=json5, status_code=200)
+        with self.assertRaises(CriticalException) as context:
+            self.json1.parse(key="*.key1.key4")
+        self.assertEqual(
+            context.exception.__str__(), "Key '*.key1.key4' not found"
+        )
