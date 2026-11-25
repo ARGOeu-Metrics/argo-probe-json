@@ -4,7 +4,8 @@ import sys
 import textwrap
 
 from argo_probe_json.analysis import (
-    check_equality, get_range, value_in_range, check_target_in_value
+    check_equality, get_range, value_in_range, check_target_in_value,
+    check_list_equality, parse_target_value
 )
 from argo_probe_json.exceptions import CriticalException, JsonException, \
     WarningException
@@ -63,7 +64,10 @@ def main():
     )
     values.add_argument(
         "-v", "--target-value", dest="target_value",
-        help="the target value to which the value of the key must be equal"
+        help="the target value to which the value of the key must be equal; "
+             "if the key's value is a list, either a single value that must "
+             "be among the key's values, or the full expected list of "
+             "values in the format [value1, value2]"
     )
     values.add_argument(
         "--is-true", dest="is_true", action="store_true",
@@ -106,9 +110,26 @@ def main():
             value = json.parse(key=args.key)
 
             if args.target_value:
+                target = parse_target_value(args.target_value)
+
                 if type(value) is list:
-                    if check_target_in_value(
-                            value=value, target=args.target_value
+                    if type(target) is list:
+                        if check_list_equality(
+                                value=value, target=target
+                        ):
+                            status.ok(
+                                msg=f"{args.key} value is "
+                                    f"{args.target_value}"
+                            )
+
+                        else:
+                            status.critical(
+                                msg=f"{args.key} value is not "
+                                    f"{args.target_value}"
+                            )
+
+                    elif check_target_in_value(
+                            value=value, target=target
                     ):
                         status.ok(
                             msg=f"Value {args.target_value} is among "
@@ -125,7 +146,7 @@ def main():
                     status.critical(f"Unable to check equality for dict")
 
                 else:
-                    if check_equality(value=value, target=args.target_value):
+                    if check_equality(value=value, target=target):
                         status.ok(
                             msg=f"{args.key} value is {args.target_value}"
                         )

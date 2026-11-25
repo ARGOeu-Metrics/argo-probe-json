@@ -2,7 +2,8 @@ import math
 import unittest
 
 from argo_probe_json.analysis import (
-    check_equality, get_range, value_in_range, check_target_in_value
+    check_equality, get_range, value_in_range, check_target_in_value,
+    check_list_equality, parse_target_value
 )
 from argo_probe_json.exceptions import JsonException
 
@@ -18,6 +19,43 @@ class AnalysisTests(unittest.TestCase):
         )
         self.assertFalse(
             check_target_in_value(value=["test1", "test2"], target="test3")
+        )
+
+    def test_parse_target_value(self):
+        self.assertEqual(
+            parse_target_value('["value3", "value5"]'),
+            ["value3", "value5"]
+        )
+        self.assertEqual(
+            parse_target_value("[value3, value5]"), ["value3", "value5"]
+        )
+        self.assertEqual(
+            parse_target_value("['value3', 'value5']"),
+            ["value3", "value5"]
+        )
+        self.assertEqual(parse_target_value("[1, 2.5, true]"), [1, 2.5, True])
+        self.assertEqual(parse_target_value("[]"), [])
+        self.assertEqual(
+            parse_target_value('["a,b", c]'), ["a,b", "c"]
+        )
+        self.assertEqual(parse_target_value("test"), "test")
+        self.assertEqual(parse_target_value("5"), "5")
+
+    def test_list_equality(self):
+        self.assertTrue(
+            check_list_equality(value=["a", "b"], target=["b", "a"])
+        )
+        self.assertTrue(
+            check_list_equality(value=["a", "b"], target=["a", "b"])
+        )
+        self.assertFalse(
+            check_list_equality(value=["a", "b"], target=["a"])
+        )
+        self.assertFalse(
+            check_list_equality(value=["a", "a"], target=["a", "b"])
+        )
+        self.assertFalse(
+            check_list_equality(value=["a", "a", "b"], target=["a", "b"])
         )
 
     def test_get_range(self):
