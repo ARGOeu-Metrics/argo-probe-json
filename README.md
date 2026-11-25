@@ -16,7 +16,7 @@ The probe has two required arguments:
 In case the probe uses only mandatory arguments, it will simply check that the response is JSON and that the returned status code is OK. There are some optional arguments, however, that cause the probe to do more extensive checks. The arguments are as follows:
 
 * `-k`, `--key` which is the key in JSON for which we wish to inspect the value;
-* `-v`, `--target-value`  which is the target value to which the value of the key must be equal, or, if the value is a list, if the target value exists within the list;
+* `-v`, `--target-value`  which is the target value to which the value of the key must be equal, or, if the value is a list, either a single value that must exist within the list, or the full expected list of values in the format `[value1, value2]` (the order of the elements is not taken into account);
 * `--is-true` flag that tells the probe to check if the tested value is boolean `True`;
 * `--is-false` flag that tells the probe to check if the tested value is boolean `False`;
 * `-w`, `--warning` which is the warning range - if the inspected value is in the requested range, the probe will return WARNING status;
@@ -79,6 +79,15 @@ It is also possible to use wildcard `*` to get `key3` values from all the elemen
 ```
 
 In this case, the value would be a list `["value3", "value5"]`. If you want to check if a certain value exists in such a list, you would pass it as the `--target-value` argument. The probe returns OK if the set target value is element of the list. 
+
+You can also check that the value of the key is exactly the expected list of values, in which case `--target-value` is defined as the list itself, for example:
+
+```
+# /usr/libexec/argo/probes/json/check_json -u https://test.example.com/test.json -t 30 -k *.key1.key3 --target-value '["value3", "value5"]'
+OK - *.key1.key3 value is ["value3", "value5"]
+```
+
+Two lists are equal if they contain the same elements the same number of times, regardless of their order. Quotes around the elements of the list are optional, so `[value3, value5]` is also accepted (keep in mind that the shell might strip them, so it is best to quote the whole list, as in the example above).
 
 If, on the other hand, you have response of the following form:
 
